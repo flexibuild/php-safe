@@ -262,7 +262,7 @@ class Compiler extends Component
                 $result .= $this->processPhpCodeWithOpenTag(array_slice($tokens, $oldOffset + 1), $tokens[$oldOffset]);
             } else {
                 $result .= $this->processPhpCodeWithOpenTag(array_slice($tokens, $oldOffset + 1, $offset - 1 - $oldOffset), $tokens[$oldOffset]);
-                $result .= $tokens[$offset][1];
+                $result .= ' '.str_replace('%', '?', $tokens[$offset][1]);
                 ++$offset;
             }
         }
