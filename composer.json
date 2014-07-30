@@ -1,0 +1,22 @@
+{
+    "name": "flexibuild/php-safe",
+    "description": "Php template engine for Yii2 applications (like php but with safe output by default)",
+    "keywords": ["yii2", "template", "safe"],
+    "homepage": "http://rgt.by/",
+    "type": "yii2-extension",
+    "authors": [
+        {
+            "name": "Alexey Seynov",
+            "email": "sejnovalexey@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "yiisoft/yii2": "*",
+        "yiisoft/yii2-twig": "*"
+    },
+    "autoload": {
+        "psr-4": { "flexibuild\\phpsafe\\": "" }
+    }
+}
