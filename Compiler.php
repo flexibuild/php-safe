@@ -47,6 +47,7 @@ class Compiler extends Component
 
     /**
      * @var boolean whether compiler will clear comments or not.
+     * `!YII_DEBUG` by default.
      */
     public $clearComments = false;
 
@@ -89,6 +90,7 @@ class Compiler extends Component
     public function __construct($code, $config = [])
     {
         $this->_code = $code;
+        $this->clearComments = defined('YII_DEBUG') ? !YII_DEBUG : false;
         parent::__construct($config);
     }
 
