@@ -99,7 +99,7 @@ class ViewRenderer extends BaseViewRenderer
      */
     protected function saveContentToCache($file, $compiledFileName)
     {
-        if (!$this->cachePath || !$this->cacheComponent || !($cacheComponent = Yii::$app->get($this->cacheComponent))) {
+        if (!$this->cacheComponent || !($cacheComponent = Yii::$app->get($this->cacheComponent))) {
             return false;
         }
         if (!$cacheComponent instanceof Cache) {
