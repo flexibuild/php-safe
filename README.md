@@ -2,9 +2,9 @@ php-safe
 ========
 
 Yii2 template engine.
-Php compiler generate php code like source with next features:
- * `<?= 'smth' ?>`, `<?php echo 'smth' ?>` converts to somthing like `<?php echo \yii\helpers\Html::encode('smth') ?>` (safe converting)
- * `<?php print 'raw' ?> converts to something like <?php print 'raw' ?> (unsafe converting)
+Php-Safe compiler generate php code like source with next features:
+ * `<?= 'smth' ?>`, `<?php echo 'smth' ?>` converts to something like `<?php echo \yii\helpers\Html::encode('smth') ?>` (safe converting);
+ * `<?php print 'raw' ?>` converts to something like `<?php print 'raw' ?>` (unsafe converting).
 
 Usage
 -----
@@ -37,16 +37,18 @@ return [
 ```
 
 Than you can create view file with extension `.sphp` and write simple php code.
-All `echo` structures in your view file (e.g. `<?=`, <?php echo...`) will be converted to save echo.
+All `echo` structures in your view file (e.g. `<?=`, `<?php echo...`) will be converted to safe echo.
 If you need to echo raw html you may use `print` syntax.
 
 Notes
 -----
 
- * Php-Safe engine will not parse functions, classes, interfaces & traits structures.
-That also means php-safe engine will not works in body of anonymous function.
+ * Php-Safe engine use [`token_get_all()`](http://php.net/manual/en/function.token-get-all.php) method for parsing code. It's pretty fast.
 
- * Php-Safe engine will parse only code of your `.sphp` view file. It doesn\'t know anything about your other code.
+ * Php-Safe engine will not parse functions, classes, interfaces & traits structures.
+That also means php-safe engine will not works in body of anonymous functions.
+
+ * Php-Safe engine will parse only code of your `.sphp` view file. It doesn't know anything about your other code.
 
  * If your php configured to use short tags and/or asp tags, php-safe will also parse this tags.
 
@@ -54,8 +56,8 @@ That also means php-safe engine will not works in body of anonymous function.
 
  * If Yii cache component configured, php-safe engine will compile views on the first rendering only.
 
- * Be carefull: code like `<?= print('smth') ?>` will be converted to smth like `<?php echo \yii\helpers\Html::encode(print('smth')) ?>`
-After executing this code prints raw 'smth' and then echoes safe '1', because php engine will echo result of print function (that always return 1).
+ * Be carefull: code like `<?= print('smth') ?>` will be converted to smth like `<?php echo \yii\helpers\Html::encode(print('smth')) ?>`.
+After executing this code prints raw 'smth' and echoes safe '1', because php engine will echo result of print function (that always return 1).
 
 Installation
 ------------
