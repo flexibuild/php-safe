@@ -25,15 +25,14 @@
 ])))?>
 
 
-<?php if (true): print(\yii\helpers\Html::encode(implode('', [ ("GT here: >\n") 
-])))?>
+<? if (true): echo ("GT here: >\n") ?>
     Div tag with double non-safe GT:
     <div>
         > <?php print( '>' 
 )?>
     </div>
-<?php else: ?>
-<?php endif; ?>
+<? else: ?>
+<? endif; ?>
 <?php print(\yii\helpers\Html::encode(implode('', [print("Bad example, only for testing: <>\n\n")
 ])))?>
 
@@ -141,11 +140,8 @@ STR
 <?php print(\yii\helpers\Html::encode(implode('', [ 'qwre'.'asd>asd', 5+6 # test 
 ])))?>
 
-    <?php print(\yii\helpers\Html::encode(implode('', [ 'test asp tags' 
-])))%>
+    <% echo 'test asp tags' %>
 
-    <?php print(\yii\helpers\Html::encode(implode('', [ "\n\n\n test echo asp tag" 
-])))%>
+    <%= "\n\n\n test echo asp tag" %>
 
-<?php print(\yii\helpers\Html::encode(implode('', [ 'end (without close ?> tag)'
-]))); 
+<? echo 'end (without close ?> tag)';
