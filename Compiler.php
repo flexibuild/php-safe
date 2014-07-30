@@ -49,7 +49,7 @@ class Compiler extends Component
      * @var boolean whether compiler will clear comments or not.
      * `!YII_DEBUG` by default.
      */
-    public $clearComments = false;
+    public $clearComments /* = defined('YII_DEBUG') ? !YII_DEBUG : false */;
 
     /**
      * @var boolean whether compiler will add safe mode for eval() or not.
