@@ -123,38 +123,38 @@ class Compiler extends Component
     }
 
     /**
-     * @param string $echoLexem
+     * @param mixed $echoToken
      * @return string code that compiler adds before echo.
      */
-    public function getBeforeEchoPhpCode($echoLexem)
+    public function getBeforeEchoPhpCode($echoToken)
     {
         /**
          * Note: square brackets are needed for code like:
          * <?php echo 'smth', 'comma', 'separated'; ?>
          */
-        $result = in_array($echoLexem, $this->unsafeEchoLexems, true)
+        $result = $this->tokenInLexems($echoToken, $this->unsafeEchoLexems, true)
             ? 'print('
             : 'print(\yii\helpers\Html::encode(';
-        if ($echoLexem === T_ECHO) {
+        if ($this->tokenHasSameLexem($echoToken, T_ECHO)) {
             $result .= 'implode(\'\', [';
         }
         return $result;
     }
 
     /**
-     * @param string $echoLexem
+     * @param mixed $echoToken
      * @return string code that compiler adds after echo.
      */
-    public function getAfterEchoPhpCode($echoLexem)
+    public function getAfterEchoPhpCode($echoToken)
     {
         /** Note: new line is needed for heredoc & nowdoc strings.
          * Also it's needed for expressions like <?= 'something' // some comment ?>
          */
         $result = "\n";
-        if ($echoLexem === T_ECHO) {
+        if ($this->tokenHasSameLexem($echoToken, T_ECHO)) {
             $result .= '])'; // close array and implode
         }
-        if (!in_array($echoLexem, $this->unsafeEchoLexems, true)) {
+        if (!$this->tokenInLexems($echoToken, $this->unsafeEchoLexems, true)) {
             $result .= ')'; // close Html::encode
         }
         $result .= ')'; // close print
@@ -366,8 +366,8 @@ class Compiler extends Component
             T_EVAL
         ] : []);
 
-        $echoTagLexem = $tokens[$offset][0];
-        $result = $this->getBeforeEchoPhpCode($echoTagLexem);
+        $echoToken = $tokens[$offset];
+        $result = $this->getBeforeEchoPhpCode($echoToken);
 
         $isBreaked = false;
         ++$offset;
@@ -394,7 +394,7 @@ class Compiler extends Component
         if ($oldOffset !== false) {
             $result .= $this->processTokenToString($tokens, $oldOffset, $offset === false ? null : $offset - 1);
         }
-        $result .= $this->getAfterEchoPhpCode($echoTagLexem);
+        $result .= $this->getAfterEchoPhpCode($echoToken);
         if ($isBreaked) {
             $result .= '; ';
         }
