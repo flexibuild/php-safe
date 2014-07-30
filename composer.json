@@ -1,6 +1,6 @@
 {
     "name": "flexibuild/php-safe",
-    "description": "Php template engine for Yii2 applications (like php but with safe output by default)",
+    "description": "Yii2 template engine. Php-Safe compiler generates php code like source but with safe echo.",
     "keywords": ["yii2", "template", "safe"],
     "homepage": "http://rgt.by/",
     "type": "yii2-extension",
