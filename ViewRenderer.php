@@ -8,8 +8,14 @@ use yii\base\InvalidConfigException;
 use yii\base\Exception;
 use yii\helpers\FileHelper;
 use yii\caching\Cache;
+use yii\caching\FileCache;
 use yii\caching\FileDependency;
 
+/**
+ * ViewRenderer component for yii2 application.
+ * 
+ * @author SeynovAM <sejnovalexey@gmail.com>
+ */
 class ViewRenderer extends BaseViewRenderer
 {
     /**
@@ -24,10 +30,13 @@ class ViewRenderer extends BaseViewRenderer
     public $mkDirMode = 0755;
 
     /**
-     * @var string the name of Yii application cache component for caching 
-     * rendered files.
+     * @var mixed string|yii\caching\Cache|null|false. The name of Yii application
+     * cache component for caching rendered files. Or instance of yii\caching\Cache class.
+     * Null or array meaning create and use yii\caching\FileCache component,
+     * array will be used as FileCache config (null by default).
+     * False meaning disabling caching.
      */
-    public $cacheComponent = 'cache';
+    public $cacheComponent;
 
     /**
      * @var string the prefix of cache key for file.
@@ -38,6 +47,38 @@ class ViewRenderer extends BaseViewRenderer
      * @var array key => value pairs that will be passed as php-safe compiler config.
      */
     public $compilerConfig = [];
+
+    /**
+     * Initializes the object.
+     * This method is invoked at the end of the constructor after the object is initialized with the
+     * given configuration.
+     * @throws InvalidConfigException if cacheComponent is incorrect.
+     */
+    public function init()
+    {
+        parent::init();
+        $this->initCacheComponent();
+    }
+
+    /**
+     * Initialization of cache component.
+     * @throws InvalidConfigException if cacheComponent is incorrect.
+     */
+    protected function initCacheComponent()
+    {
+        if ($this->cacheComponent === null || is_array($this->cacheComponent)) {
+            $this->cacheComponent = new FileCache(array_merge(array(
+                'cachePath' =>  $this->compiledPath,
+                'dirMode'   =>  $this->mkDirMode,
+            ), $this->cacheComponent ?: array()));
+        } elseif (is_string($this->cacheComponent)) {
+            $this->cacheComponent = Yii::$app->get($this->cacheComponent);
+        }
+
+        if ($this->cacheComponent !== false && !($this->cacheComponent instanceof Cache)) {
+            throw new InvalidConfigException('Incorrect value of '.__CLASS__.'::$cacheComponent param. Calculated value of this param must be an instance of '.Cache::className().'.');
+        }
+    }
 
     /**
      * Renders a view file.
@@ -73,18 +114,14 @@ class ViewRenderer extends BaseViewRenderer
      * Tries to load compiled code from cache.
      * @param string $file the view file.
      * @return mixed string compiled file name or false if did not found in cache.
-     * @throws InvalidConfigException if cacheComponent is incorrect.
      */
     protected function loadContentFromCache($file)
     {
-        if (!$this->cacheComponent || !($cacheComponent = Yii::$app->get($this->cacheComponent))) {
+        if ($this->cacheComponent === false) {
             return false;
         }
-        if (!$cacheComponent instanceof Cache) {
-            throw new InvalidConfigException(__CLASS__.'::$cacheComponent param must contain the name of the Yii application component that is instance of '.Cache::className().'.');
-        }
 
-        if (false !== $compiledFile = $cacheComponent->get($this->getCacheKey($file))) {
+        if (false !== $compiledFile = $this->cacheComponent->get($this->getCacheKey($file))) {
             return file_exists($this->getCompiledFilePath($compiledFile)) ? $compiledFile : false;
         }
         return false;
@@ -95,18 +132,14 @@ class ViewRenderer extends BaseViewRenderer
      * @param string $file the view file.
      * @param string $compiledFileName compiled file name that will save.
      * @return boolean whether the value is successfully stored into cache.
-     * @throws InvalidConfigException if cacheComponent is incorrect.
      */
     protected function saveContentToCache($file, $compiledFileName)
     {
-        if (!$this->cacheComponent || !($cacheComponent = Yii::$app->get($this->cacheComponent))) {
+        if ($this->cacheComponent === false) {
             return false;
         }
-        if (!$cacheComponent instanceof Cache) {
-            throw new InvalidConfigException(__CLASS__.'::$cacheComponent param must contain the name of the Yii application component that is instance of '.Cache::className().'.');
-        }
 
-        return $cacheComponent->set($this->getCacheKey($file), $compiledFileName, 0, new FileDependency([
+        return $this->cacheComponent->set($this->getCacheKey($file), $compiledFileName, 0, new FileDependency([
             'fileName' => $file,
         ]));
     }
