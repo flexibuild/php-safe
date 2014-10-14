@@ -3,10 +3,12 @@
 namespace flexibuild\phpsafe;
 
 use Yii;
+use yii\helpers\FileHelper;
+
 use yii\base\ViewRenderer as BaseViewRenderer;
 use yii\base\InvalidConfigException;
 use yii\base\Exception;
-use yii\helpers\FileHelper;
+
 use yii\caching\Cache;
 use yii\caching\FileCache;
 use yii\caching\FileDependency;
@@ -95,26 +97,27 @@ class ViewRenderer extends BaseViewRenderer
      */
     public function render($view, $file, $params)
     {
-        if (false === $compiledFile = $this->loadContentFromCache($file)) {
+        if (false === $hash = $this->loadContentFromCache($file)) {
             $compiler = Compiler::createFromCode(file_get_contents($file), $this->compilerConfig);
             $content = $compiler->getCompiledCode();
 
-            while (file_exists($this->getCompiledFilePath($compiledFile = Yii::$app->security->generateRandomString(12).'.php')));
-            if (!FileHelper::createDirectory($dir = Yii::getAlias($this->compiledPath), $this->mkDirMode)) {
+            while (file_exists($compiledFile = $this->getCompiledFilePath($hash = Yii::$app->security->generateRandomString(12))));
+            if (!FileHelper::createDirectory($dir = dirname($compiledFile), $this->mkDirMode)) {
                 $mode = '0'.base_convert($this->mkDirMode, 10, 8);
                 throw new Exception("Cannot create directory '$dir' with $mode mode.");
             }
-            file_put_contents($this->getCompiledFilePath($compiledFile), $content);
+            file_put_contents($compiledFile, $content);
 
-            $this->saveContentToCache($file, $compiledFile);
+            $this->saveContentToCache($file, $hash);
         }
-        return $view->renderPhpFile($this->getCompiledFilePath($compiledFile), $params);
+        return $view->renderPhpFile($this->getCompiledFilePath($hash), $params);
     }
 
     /**
      * Tries to load compiled code from cache.
      * @param string $file the view file.
-     * @return mixed string compiled file name or false if did not found in cache.
+     * @return mixed string generated hash for compiled file name or
+     * false if did not found in cache.
      */
     protected function loadContentFromCache($file)
     {
@@ -122,8 +125,8 @@ class ViewRenderer extends BaseViewRenderer
             return false;
         }
 
-        if (false !== $compiledFile = $this->cacheComponent->get($this->getCacheKey($file))) {
-            return file_exists($this->getCompiledFilePath($compiledFile)) ? $compiledFile : false;
+        if (false !== $hash = $this->cacheComponent->get($this->getCacheKey($file))) {
+            return file_exists($this->getCompiledFilePath($hash)) ? $hash : false;
         }
         return false;
     }
@@ -131,16 +134,16 @@ class ViewRenderer extends BaseViewRenderer
     /**
      * Tries to save compiled code to cache.
      * @param string $file the view file.
-     * @param string $compiledFileName compiled file name that will save.
+     * @param string $hash generated hash for compiled file name that will save.
      * @return boolean whether the value is successfully stored into cache.
      */
-    protected function saveContentToCache($file, $compiledFileName)
+    protected function saveContentToCache($file, $hash)
     {
         if ($this->cacheComponent === false) {
             return false;
         }
 
-        return $this->cacheComponent->set($this->getCacheKey($file), $compiledFileName, 0, new FileDependency([
+        return $this->cacheComponent->set($this->getCacheKey($file), $hash, 0, new FileDependency([
             'fileName' => $file,
         ]));
     }
@@ -156,11 +159,11 @@ class ViewRenderer extends BaseViewRenderer
     }
 
     /**
-     * @param string $name file name.
+     * @param string $hash generated hash for file.
      * @return string the full path to compiled file.
      */
-    public function getCompiledFilePath($name)
+    public function getCompiledFilePath($hash)
     {
-        return rtrim(Yii::getAlias($this->compiledPath), '\/').'/'.$name;
+        return rtrim(Yii::getAlias($this->compiledPath), '\/').'/'.substr($hash, 0, 2).'/'.substr($hash, 2, 2).'/'.substr($hash, 4).'.php';
     }
 }
