@@ -11,7 +11,8 @@ use yii\base\Exception;
 
 use yii\caching\Cache;
 use yii\caching\FileCache;
-use yii\caching\FileDependency;
+use yii\caching\FileDependency as YiiFileDependency;
+use flexibuild\phpsafe\caching\FileDependency;
 
 /**
  * ViewRenderer component for yii2 application.
@@ -39,6 +40,11 @@ class ViewRenderer extends BaseViewRenderer
      * False meaning disabling caching.
      */
     public $cacheComponent;
+
+    /**
+     * @var string Yii styled config for cache dependency object.
+     */
+    public $cacheDependencyConfig = 'flexibuild\phpsafe\caching\FileDependency';
 
     /**
      * @var string the prefix of cache key for file.
@@ -97,7 +103,7 @@ class ViewRenderer extends BaseViewRenderer
      */
     public function render($view, $file, $params)
     {
-        if (false === $hash = $this->loadContentFromCache($file)) {
+        if (false === $hash = $this->loadHashFromCache($file)) {
             $compiler = Compiler::createFromCode(file_get_contents($file), $this->compilerConfig);
             $content = $compiler->getCompiledCode();
 
@@ -108,18 +114,18 @@ class ViewRenderer extends BaseViewRenderer
             }
             file_put_contents($compiledFile, $content);
 
-            $this->saveContentToCache($file, $hash);
+            $this->saveHashToCache($file, $hash);
         }
         return $view->renderPhpFile($this->getCompiledFilePath($hash), $params);
     }
 
     /**
-     * Tries to load compiled code from cache.
-     * @param string $file the view file.
+     * Tries to load compiled file from cache.
+     * @param string $file the view file name.
      * @return mixed string generated hash for compiled file name or
      * false if did not found in cache.
      */
-    protected function loadContentFromCache($file)
+    protected function loadHashFromCache($file)
     {
         if ($this->cacheComponent === false) {
             return false;
@@ -132,20 +138,29 @@ class ViewRenderer extends BaseViewRenderer
     }
 
     /**
-     * Tries to save compiled code to cache.
+     * Tries to save compiled hash to cache.
      * @param string $file the view file.
      * @param string $hash generated hash for compiled file name that will save.
      * @return boolean whether the value is successfully stored into cache.
      */
-    protected function saveContentToCache($file, $hash)
+    protected function saveHashToCache($file, $hash)
     {
         if ($this->cacheComponent === false) {
             return false;
         }
 
-        return $this->cacheComponent->set($this->getCacheKey($file), $hash, 0, new FileDependency([
-            'fileName' => $file,
-        ]));
+        $dependency = $this->cacheDependencyConfig;
+        if (!is_object($dependency) && $dependency !== null) {
+            $dependency = Yii::createObject($dependency);
+        }
+        if ($dependency instanceof YiiFileDependency) {
+            $dependency->fileName = $file;
+        }
+        if ($dependency instanceof FileDependency) {
+            $dependency->compiledFileName = $this->getCompiledFilePath($hash);
+        }
+
+        return $this->cacheComponent->set($this->getCacheKey($file), $hash, 0, $dependency);
     }
 
     /**
@@ -164,6 +179,6 @@ class ViewRenderer extends BaseViewRenderer
      */
     public function getCompiledFilePath($hash)
     {
-        return rtrim(Yii::getAlias($this->compiledPath), '\/').'/'.substr($hash, 0, 2).'/'.substr($hash, 2, 2).'/'.substr($hash, 4).'.php';
+        return rtrim(Yii::getAlias($this->compiledPath), '\/').'/'.substr($hash, 0, 2).'/'.substr($hash, 2).'.php';
     }
 }
