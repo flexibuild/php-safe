@@ -22,7 +22,7 @@ class ViewRenderer extends BaseViewRenderer
      * @var string the directory or path alias pointing to where Php-Safe engine
      * compiled files will be stored.
      */
-    public $compiledPath = '@runtime/PhpSafe/compiled';
+    public $compiledPath = '@runtime/phpsafe/compiled';
 
     /**
      * @var integer make directory that will be passed into [[FileHelper::createDirectory()]].
@@ -67,10 +67,11 @@ class ViewRenderer extends BaseViewRenderer
     protected function initCacheComponent()
     {
         if ($this->cacheComponent === null || is_array($this->cacheComponent)) {
-            $this->cacheComponent = new FileCache(array_merge(array(
-                'cachePath' =>  $this->compiledPath,
-                'dirMode'   =>  $this->mkDirMode,
-            ), $this->cacheComponent ?: array()));
+            $this->cacheComponent = Yii::createObject(array_merge([
+                'class' => FileCache::className(),
+                'cachePath' => $this->compiledPath,
+                'dirMode' => $this->mkDirMode,
+            ], $this->cacheComponent ?: []));
         } elseif (is_string($this->cacheComponent)) {
             $this->cacheComponent = Yii::$app->get($this->cacheComponent);
         }

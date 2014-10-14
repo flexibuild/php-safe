@@ -410,9 +410,7 @@ class Compiler extends Component
      * @param integer $offset 0 by default.
      * After process set `$offset` on the first lexem after body expression.
      * @return string
-     * @throws LogicException on parse error.
      * @throws InvalidParamException
-     * @throws \Exception
      */
     protected function processEntityWithBody($tokens, &$offset = 0)
     {
@@ -436,6 +434,8 @@ class Compiler extends Component
      * @param integer $offset 0 by default.
      * After process set `$offset` on the first lexem after eval expression.
      * @return string php code tokens with processed evals.
+     * @throws InvalidParamException
+     * @throws LogicException on parse error.
      */
     protected function processEvals($phpCodeTokens, &$offset = 0)
     {
