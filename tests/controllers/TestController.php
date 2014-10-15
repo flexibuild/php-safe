@@ -4,7 +4,6 @@ namespace console\controllers;
 
 use yii\console\Controller;
 use flexibuild\phpsafe\Compiler;
-use flexibuild\phpsafe\Html;
 
 class TestController extends Controller
 {

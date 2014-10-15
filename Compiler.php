@@ -183,11 +183,11 @@ class Compiler extends Component
      */
     protected function tokenHasSameLexem($token, $lexem)
     {
-        if (is_string($lexem) && $token === $lexem) {
-            return true;
+        if (is_string($lexem)) {
+            return $lexem === $token;
         }
-        if (is_int($lexem) && is_array($token) && $lexem === $token[0]) {
-            return true;
+        if (is_int($lexem) && is_array($token)) {
+            return $lexem === $token[0];
         }
         return false;
     }

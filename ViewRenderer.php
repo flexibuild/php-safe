@@ -104,9 +104,11 @@ class ViewRenderer extends BaseViewRenderer
     public function render($view, $file, $params)
     {
         if (false === $hash = $this->loadHashFromCache($file)) {
-            $this->compileFile($file, false);
+            $compiledFilePath = $this->compileFile($file, false);
+        }  else {
+            $compiledFilePath = $this->getCompiledFilePath($hash);
         }
-        return $view->renderPhpFile($this->getCompiledFilePath($hash), $params);
+        return $view->renderPhpFile($compiledFilePath, $params);
     }
 
     /**
@@ -115,12 +117,13 @@ class ViewRenderer extends BaseViewRenderer
      * @param bool $checkCache whether method must check hash. If true and cache
      * consits hash for this file it will not recompiled. If false method will
      * always recompile file.
+     * @return string compiled file path.
      * @throws Exception if cannot create dir.
      */
     public function compileFile($file, $checkCache = true)
     {
-        if ($checkCache && $this->loadHashFromCache($file) !== false) {
-            return;
+        if ($checkCache && false !== $hash = $this->loadHashFromCache($file)) {
+            return $this->getCompiledFilePath($hash);
         }
 
         Yii::beginProfile($profileToken = "Compile file $file.", __METHOD__);
@@ -136,6 +139,7 @@ class ViewRenderer extends BaseViewRenderer
         file_put_contents($compiledFile, $content);
 
         $this->saveHashToCache($file, $hash);
+        return $this->getCompiledFilePath($hash);
     }
 
     /**

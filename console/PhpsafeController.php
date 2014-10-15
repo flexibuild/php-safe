@@ -40,7 +40,8 @@ class PhpsafeController extends Controller
 
             foreach ($files as $file) {
                 $this->stdout("Compiling file $file.\n");
-                $renderer->compileFile($file, !$recompile);
+                $compiledFilePath = $renderer->compileFile($file, !$recompile);
+                $this->stdout("Compiled to '$compiledFilePath'.\n");
             }
         }
         $this->stdout("Done.\n");
