@@ -2,6 +2,7 @@
 
 namespace flexibuild\phpsafe;
 
+use Yii;
 use yii\base\Component;
 use yii\base\InvalidParamException;
 use yii\helpers\VarDumper;
@@ -110,7 +111,12 @@ class Compiler extends Component
         if ($this->_tokens !== null) {
             return $this->_tokens;
         }
-        return $this->_tokens = token_get_all($this->getCode());
+
+        Yii::beginProfile($token = 'Parse code with token_get_all().', __METHOD__);
+        $this->_tokens = token_get_all($this->getCode());
+        Yii::endProfile($token, __METHOD__);
+
+        return $this->_tokens;
     }
 
     /**
@@ -121,7 +127,12 @@ class Compiler extends Component
         if ($this->_compiledCode !== null) {
             return $this->_compiledCode;
         }
-        return $this->_compiledCode = $this->processTokens();
+
+        Yii::beginProfile($token = 'Process tokens with phpsafe compiler.', __METHOD__);
+        $this->_compiledCode = $this->processTokens();
+        Yii::endProfile($token, __METHOD__);
+
+        return $this->_compiledCode;
     }
 
     /**

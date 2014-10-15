@@ -3,7 +3,7 @@
 namespace flexibuild\phpsafe;
 
 use Yii;
-use yii\helpers\FileHelper;
+use flexibuild\phpsafe\helpers\FileHelper;
 
 use yii\base\ViewRenderer as BaseViewRenderer;
 use yii\base\InvalidConfigException;
@@ -77,7 +77,7 @@ class ViewRenderer extends BaseViewRenderer
         if ($this->cacheComponent === null || is_array($this->cacheComponent)) {
             $this->cacheComponent = Yii::createObject(array_merge([
                 'class' => FileCache::className(),
-                'cachePath' => $this->compiledPath,
+                'cachePath' => rtrim($this->compiledPath, '\/').'/cache',
                 'dirMode' => $this->mkDirMode,
             ], $this->cacheComponent ?: []));
         } elseif (is_string($this->cacheComponent)) {
@@ -104,19 +104,38 @@ class ViewRenderer extends BaseViewRenderer
     public function render($view, $file, $params)
     {
         if (false === $hash = $this->loadHashFromCache($file)) {
-            $compiler = Compiler::createFromCode(file_get_contents($file), $this->compilerConfig);
-            $content = $compiler->getCompiledCode();
-
-            while (file_exists($compiledFile = $this->getCompiledFilePath($hash = Yii::$app->security->generateRandomString(12))));
-            if (!FileHelper::createDirectory($dir = dirname($compiledFile), $this->mkDirMode)) {
-                $mode = '0'.base_convert($this->mkDirMode, 10, 8);
-                throw new Exception("Cannot create directory '$dir' with $mode mode.");
-            }
-            file_put_contents($compiledFile, $content);
-
-            $this->saveHashToCache($file, $hash);
+            $this->compileFile($file, false);
         }
         return $view->renderPhpFile($this->getCompiledFilePath($hash), $params);
+    }
+
+    /**
+     * Compiles file.
+     * @param string $file path to phpsafe file.
+     * @param bool $checkCache whether method must check hash. If true and cache
+     * consits hash for this file it will not recompiled. If false method will
+     * always recompile file.
+     * @throws Exception if cannot create dir.
+     */
+    public function compileFile($file, $checkCache = true)
+    {
+        if ($checkCache && $this->loadHashFromCache($file) !== false) {
+            return;
+        }
+
+        Yii::beginProfile($profileToken = "Compile file $file.", __METHOD__);
+        $compiler = Compiler::createFromCode(file_get_contents($file), $this->compilerConfig);
+        $content = $compiler->getCompiledCode();
+        Yii::endProfile($profileToken, __METHOD__);
+
+        while (file_exists($compiledFile = $this->getCompiledFilePath($hash = Yii::$app->security->generateRandomString(12))));
+        if (!FileHelper::createDirectory($dir = dirname($compiledFile), $this->mkDirMode, true)) {
+            $mode = '0'.base_convert($this->mkDirMode, 10, 8);
+            throw new Exception("Cannot create directory '$dir' with $mode mode.");
+        }
+        file_put_contents($compiledFile, $content);
+
+        $this->saveHashToCache($file, $hash);
     }
 
     /**

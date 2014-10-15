@@ -33,6 +33,7 @@ return [
         ],
         //....
     ],
+    //....
 ];
 ```
 
@@ -77,3 +78,46 @@ or add
 ```
 
 to the require section of your composer.json.
+
+Console commands
+----------------
+
+This extension allows you to exec the following console commands:
+
+1. yii phpsafe/flush-all
+
+Flushes all compiled by phpsafe engine files.
+
+2. yii phpsafe/compile-all
+
+Compiles all phpsafe files to php files.
+
+
+For using console commands you must configure console with renderers like in web configuration.
+You must add phpsafe console controller in your console controller map configuration:
+
+```php
+return [
+    //....
+    'controllerMap' => [
+        //....
+        'phpsafe' => 'flexibuild\phpsafe\console\PhpsafeController',
+        //....
+    ],
+    //....
+    'components' => [
+        //....
+        'view' => [
+            'renderers' => [
+                'sphp' => [
+                    'class' => 'flexibuild\phpsafe\ViewRenderer',
+                    // ... and other parameters exactly as in the web configuration
+                ],
+            ],
+        ],
+        //....
+    ],
+    //....
+];
+```
+
