@@ -2,7 +2,7 @@ php-safe
 ========
 
 Yii2 template engine.
-Php-Safe compiler generate php code like source with next features:
+Php-Safe compiler generates php code like source with next features:
  * `<?= 'smth' ?>`, `<?php echo 'smth' ?>` converts to something like `<?php echo \yii\helpers\Html::encode('smth') ?>` (safe converting);
  * `<?php print 'raw' ?>` converts to something like `<?php print 'raw' ?>` (unsafe converting).
 
@@ -55,7 +55,7 @@ That also means php-safe engine will not works in body of anonymous functions.
 
  * You may configure your IDE to parse `.sphp` files like `.php` files for more convenience.
 
- * If Yii cache component configured, php-safe engine will compile views on the first rendering only.
+ * By default php-safe engine will compile views on the first rendering only.
 
  * Be carefull: code like `<?= print('smth') ?>` will be converted to smth like `<?php echo \yii\helpers\Html::encode(print('smth')) ?>`.
 After executing this code prints raw 'smth' and echoes safe '1', because php engine will echo result of print function (that always return 1).
@@ -84,13 +84,9 @@ Console commands
 
 This extension allows you to exec the following console commands:
 
-1. yii phpsafe/flush-all
+* `yii phpsafe/flush-all` Flushes all compiled by phpsafe engine files.
 
-Flushes all compiled by phpsafe engine files.
-
-2. yii phpsafe/compile-all
-
-Compiles all phpsafe files to php files.
+* `yii phpsafe/compile-all` Compiles all phpsafe files to php files.
 
 
 For using console commands you must configure console with renderers like in web configuration.
