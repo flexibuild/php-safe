@@ -7,6 +7,7 @@ use flexibuild\phpsafe\helpers\FileHelper;
 
 use yii\base\ViewRenderer as BaseViewRenderer;
 use yii\base\InvalidConfigException;
+use yii\base\InvalidParamException;
 use yii\base\Exception;
 
 use yii\caching\Cache;
@@ -118,6 +119,7 @@ class ViewRenderer extends BaseViewRenderer
      * consits hash for this file it will not recompiled. If false method will
      * always recompile file.
      * @return string compiled file path.
+     * @throws InvalidParamException if file does not exists.
      * @throws Exception if cannot create dir.
      */
     public function compileFile($file, $checkCache = true)
@@ -126,9 +128,13 @@ class ViewRenderer extends BaseViewRenderer
             return $this->getCompiledFilePath($hash);
         }
 
+        if (!($realFilePath = realpath($file)) || !($sourceContent = @file_get_contents($realFilePath))) {
+            throw new InvalidParamException("File '$file' was not found.");
+        }
+
         Yii::beginProfile($profileToken = "Compile file $file.", __METHOD__);
-        $compilerConfig = array_merge($this->compilerConfig, ['compilingFilePath' => $file]);
-        $compiler = Compiler::createFromCode(file_get_contents($file), $compilerConfig);
+        $compilerConfig = array_merge($this->compilerConfig, ['compilingFilePath' => $realFilePath]);
+        $compiler = Compiler::createFromCode($sourceContent, $compilerConfig);
         $content = $compiler->getCompiledCode();
         Yii::endProfile($profileToken, __METHOD__);
 
