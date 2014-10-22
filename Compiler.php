@@ -58,6 +58,11 @@ class Compiler extends Component
     public $processEval = true;
 
     /**
+     * @var string path to compiling file.
+     */
+    public $compilingFilePath = 'Unknown';
+
+    /**
      * @var string php code for parsing.
      */
     private $_code;
@@ -458,6 +463,10 @@ class Compiler extends Component
             throw new LogicException('Cannot find open bracket \'(\' after eval keyword on the line:'.$phpCodeTokens[$oldOffset][2].'.');
         }
 
+        $lineOffset = $offset + 2;
+        while (--$lineOffset > 0 && !is_array($phpCodeTokens[$lineOffset])); // search last token with line number
+        $line = $lineOffset > 0 ? $phpCodeTokens[$lineOffset][2] : 0;
+
         $result = "eval(ltrim(\\".ltrim(get_class($this), '\\');
         $result .= "::createFromCode('<?php '.";
         $result .= $this->processTokenToString($phpCodeTokens, $oldOffset + 1, $offset);
@@ -467,6 +476,7 @@ class Compiler extends Component
             'echoLexems'        =>  $this->echoLexems,
             'unsafeEchoLexems'  =>  $this->unsafeEchoLexems,
             'clearComments'     =>  $this->clearComments,
+            'compilingFilePath' =>  "$this->compilingFilePath($line) : eval()'d code",
         ]);
         $result .= ')'; // close createFromCode()
         $result .= '->getCompiledCode()';
@@ -509,15 +519,21 @@ class Compiler extends Component
             return $token;
         }
 
-        $text = $token[1];
-        if (!$this->clearComments) {
-            return $text;
+        if ($this->clearComments && $this->isComment($token)) {
+            return '';
         }
 
-        if ($this->isComment($token)) {
-            return ''; // exclude comments
+        // check magic constants
+        switch (true) {
+            case $this->tokenHasSameLexem($token, T_DIR):
+                return var_export(dirname($this->compilingFilePath), true);
+            case $this->tokenHasSameLexem($token, T_FILE):
+                return var_export($this->compilingFilePath, true);
+            case $this->tokenHasSameLexem($token, T_LINE):
+                return var_export($token[2], true);
         }
-        return $text;
+
+        return $token[1];
     }
 
     /**

@@ -127,7 +127,8 @@ class ViewRenderer extends BaseViewRenderer
         }
 
         Yii::beginProfile($profileToken = "Compile file $file.", __METHOD__);
-        $compiler = Compiler::createFromCode(file_get_contents($file), $this->compilerConfig);
+        $compilerConfig = array_merge($this->compilerConfig, ['compilingFilePath' => $file]);
+        $compiler = Compiler::createFromCode(file_get_contents($file), $compilerConfig);
         $content = $compiler->getCompiledCode();
         Yii::endProfile($profileToken, __METHOD__);
 
