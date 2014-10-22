@@ -340,8 +340,9 @@ class Compiler extends Component
         ] : [], $entitiesWithBodyLexems);
 
         while ((false !== $oldOffset = $offset) && (false !== $offset = $this->skipUntilLexems($phpCodeTokens, $skipUntilLexems, $offset))) {
+            $result .= $this->processTokenToString($phpCodeTokens, $oldOffset, $offset - 1);
+
             if ($this->tokenInLexems($phpCodeTokens[$offset], $this->echoLexems)) {
-                $result .= $this->processTokenToString($phpCodeTokens, $oldOffset, $offset - 1);
                 $result .= $this->processEchoExpression($phpCodeTokens, $offset);
 
             } elseif ($this->processEval && $this->tokenHasSameLexem($phpCodeTokens[$offset], T_EVAL)) {

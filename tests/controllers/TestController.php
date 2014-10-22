@@ -9,7 +9,10 @@ class TestController extends Controller
 {
     public function actionRun($filename = 'test.php')
     {
-        $compiler = new Compiler(file_get_contents(__DIR__."/../$filename"));
+        $file = realpath(__DIR__."/../$filename");
+        $compiler = new Compiler(file_get_contents($file), [
+            'compilingFilePath' => $file,
+        ]);
         file_put_contents(__DIR__.'/../compiled.php', $compiler->getCompiledCode());
     }
 

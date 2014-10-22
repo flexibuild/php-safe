@@ -73,4 +73,21 @@ STR
 
     <%= Html::encode("\n\n\n test echo asp tag") %>
 
+<?php echo Html::encode(__DIR__.DIRECTORY_SEPARATOR.'test.php') ?>
+<?php echo Html::encode(__DIR__); ?>
+<?php echo 77; ?>
+<?php echo ''; ?>
+<?php echo ''; ?>
+<?php echo ''; ?>
+<?php echo ''; ?>
+<?php echo ''; ?>
+
+<?php 
+$nl2br = function ($content) {
+    echo nl2br(\yii\helpers\Html::encode($content));
+}; ?>
+
+<?php $nl2br('\ntest\ntest\nnl2br\n'); ?>
+<?= $nl2br('\ntest\ntest\nnl2br\n'); ?>
+
 <? echo Html::encode('end (without close ?> tag)');

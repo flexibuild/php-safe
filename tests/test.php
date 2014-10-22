@@ -1,5 +1,4 @@
 <?php
-/* @var $html \flexibuild\phpsafe\Html */
 // other comment;
 ?>
 <?= "Must be GT here: >\n" ?>
@@ -72,5 +71,22 @@ STR
     <% echo 'test asp tags' %>
 
     <%= "\n\n\n test echo asp tag" %>
+
+<?php echo __FILE__ ?>
+<?php echo __DIR__; ?>
+<?php echo __LINE__; ?>
+<?php echo __CLASS__; ?>
+<?php echo __FUNCTION__; ?>
+<?php echo __METHOD__; ?>
+<?php echo __TRAIT__; ?>
+<?php echo __NAMESPACE__; ?>
+
+<?php 
+$nl2br = function ($content) {
+    echo nl2br(\yii\helpers\Html::encode($content));
+}; ?>
+
+<?php $nl2br('\ntest\ntest\nnl2br\n'); ?>
+<?= $nl2br('\ntest\ntest\nnl2br\n'); ?>
 
 <? echo 'end (without close ?> tag)';
