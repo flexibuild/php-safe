@@ -19,18 +19,31 @@ use flexibuild\phpsafe\ViewRenderer;
 class PhpsafeController extends Controller
 {
     /**
+     * @var string directory that used in `actionCompileAll()` for searching phpsafe files.
+     * You can use Yii aliases syntax for it.
+     */
+    public $searchDir = '@app';
+
+    /**
+     * @var array Array of ignored patterns. This value will be passed to except
+     * option of `yii\helpers\FileHelper::findFiles()`.
+     */
+    public $exceptDirs = [
+        '/vendor/',
+    ];
+
+    /**
      * Compiles all phpsafe files to php files.
      * @param bool $recompile Whether method must recompile file even if it has been already compiled.
-     * @param array $except Array of ignored patterns. This value will be passed to except option of `yii\helpers\FileHelper::findFiles()`.
      */
-    public function actionCompileAll($recompile = false, array $except = ['/vendor/'])
+    public function actionCompileAll($recompile = false)
     {
-        $dir = rtrim(Yii::getAlias('@app'), '\/');
+        $dir = rtrim(Yii::getAlias($this->searchDir), '\/');
         foreach ($this->getPhpsafeRenderers() as $ext => $renderer) {
             $this->stdout("Search all '.$ext' files in '$dir'...\n");
             $files = FileHelper::findFiles($dir, [
                 'only' => ["*.$ext"],
-                'except' => $except,
+                'except' => $this->exceptDirs,
             ]);
 
             $this->stdout(Yii::$app->i18n->format("There {n, plural, =0{are no files} =1{is one file} other{are # files}} in '$dir'.\n", [
