@@ -128,7 +128,7 @@ class ViewRenderer extends BaseViewRenderer
             return $this->getCompiledFilePath($hash);
         }
 
-        if (!($realFilePath = realpath($file)) || !($sourceContent = @file_get_contents($realFilePath))) {
+        if ((false === $realFilePath = realpath($file)) || (false === $sourceContent = @file_get_contents($realFilePath))) {
             throw new InvalidParamException("File '$file' was not found.");
         }
 
