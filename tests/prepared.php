@@ -90,4 +90,12 @@ $nl2br = function ($content) {
 <?php $nl2br('\ntest\ntest\nnl2br\n'); ?>
 <?= $nl2br('\ntest\ntest\nnl2br\n'); ?>
 
+    <?php print(implode(', ', array_map(function ($label) {
+        return "$label<br/>";
+    }, ['el1', 'el2']))) ?>
+    <?= Html::encode(implode(', ', array_map(function ($label) {
+        return "$label<br/>";
+    }, ['el1', 'el2']))) ?>
+    <?= Html::encode(implode(',', eval('return ["el3", "3l4"];'))) ?>
+
 <? echo Html::encode('end (without close ?> tag)');

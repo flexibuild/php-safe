@@ -392,9 +392,10 @@ class Compiler extends Component
         ++$offset;
 
         while ((false !== $oldOffset = $offset) && (false !== $offset = $this->skipUntilLexems($tokens, $skipUntilLexemsForEcho, $offset))) {
+            $result .= $this->processTokenToString($tokens, $oldOffset, $offset - 1);
+
             if ($this->tokenHasSameLexem($tokens[$offset], ';')) {
                 $isBreaked = true;
-                $result .= $this->processTokenToString($tokens, $oldOffset, $offset - 1);
                 $oldOffset = ++$offset + 1;
                 break;
 
