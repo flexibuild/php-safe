@@ -79,6 +79,23 @@ or add
 
 to the require section of your composer.json.
 
+Gii generators
+--------------
+
+This extension allows you to configure your gii module for using standard yii
+generators with phpsafe files. For example, you may add it in you main-local file:
+```php
+    $config['modules']['gii'] = [
+        'class' => 'yii\gii\Module',
+        'generators' => [
+            'controller' => 'flexibuild\phpsafe\gii\generators\controller\Generator',
+            'crud' => 'flexibuild\phpsafe\gii\generators\crud\Generator',
+            'form' => 'flexibuild\phpsafe\gii\generators\form\Generator',
+            'module' => 'flexibuild\phpsafe\gii\generators\module\Generator',
+        ],
+    ];
+```
+
 Console commands
 ----------------
 
@@ -116,4 +133,9 @@ return [
     //....
 ];
 ```
+
+Note:
+
+* Extension has default config for yii simple base application. For yii-advanced application
+you must configure directories so console will may "see" it.
 
