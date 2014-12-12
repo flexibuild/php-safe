@@ -29,9 +29,16 @@ class ViewRenderer extends BaseViewRenderer
     public $compiledPath = '@runtime/phpsafe/compiled';
 
     /**
+     * @var integer the permission to be set for newly created cache files.
+     * This value will be used by PHP chmod() function. No umask will be applied.
+     * If not set, the permission will be determined by the current environment.
+     */
+    public $fileMode;
+
+    /**
      * @var integer make directory that will be passed into [[FileHelper::createDirectory()]].
      */
-    public $mkDirMode = 0755;
+    public $mkDirMode = 0777;
 
     /**
      * @var mixed string|yii\caching\Cache|null|false. The name of Yii application
@@ -79,6 +86,7 @@ class ViewRenderer extends BaseViewRenderer
             $this->cacheComponent = Yii::createObject(array_merge([
                 'class' => FileCache::className(),
                 'cachePath' => rtrim($this->compiledPath, '\/').'/cache',
+                'fileMode' => $this->fileMode,
                 'dirMode' => $this->mkDirMode,
             ], $this->cacheComponent ?: []));
         } elseif (is_string($this->cacheComponent)) {
@@ -140,10 +148,14 @@ class ViewRenderer extends BaseViewRenderer
 
         while (file_exists($compiledFile = $this->getCompiledFilePath($hash = Yii::$app->security->generateRandomString(12))));
         if (!FileHelper::createDirectory($dir = dirname($compiledFile), $this->mkDirMode, true)) {
-            $mode = '0'.base_convert($this->mkDirMode, 10, 8);
+            $mode = '0' . base_convert($this->mkDirMode, 10, 8);
             throw new Exception("Cannot create directory '$dir' with $mode mode.");
         }
         file_put_contents($compiledFile, $content);
+        if ($this->fileMode !== null && !@chmod($compiledFile, $this->fileMode)) {
+            $mode = '0' . base_convert($this->fileMode, 10, 8);
+            Yii::warning("Cannot change mode to $mode for file: $compiledFile.", __METHOD__);
+        }
 
         $this->saveHashToCache($file, $hash);
         return $this->getCompiledFilePath($hash);
