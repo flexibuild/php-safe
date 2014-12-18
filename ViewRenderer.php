@@ -11,6 +11,7 @@ use yii\base\InvalidParamException;
 use yii\base\Exception;
 
 use yii\caching\Cache;
+use yii\caching\Dependency;
 use yii\caching\FileCache;
 use yii\caching\FileDependency as YiiFileDependency;
 use flexibuild\phpsafe\caching\FileDependency;
@@ -192,7 +193,7 @@ class ViewRenderer extends BaseViewRenderer
         }
 
         $dependency = $this->cacheDependencyConfig;
-        if (!is_object($dependency) && $dependency !== null) {
+        if ($dependency !== null && !($dependency instanceof Dependency)) {
             $dependency = Yii::createObject($dependency);
         }
         if ($dependency instanceof YiiFileDependency) {
