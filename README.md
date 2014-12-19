@@ -21,7 +21,7 @@ return [
                 'sphp' => [
                     'class' => 'flexibuild\phpsafe\ViewRenderer',
                     //the directory or path alias pointing to where Php-Safe engine compiled files will be stored.
-                    //'compiledPath' => '@runtime/PhpSafe/compiled',
+                    //'compiledPath' => '@runtime/flexibuild/PhpSafe/compiled',
                     //'fileMode' => null,
                     //'mkDirMode' => 0777,
                     //the name of Yii application cache component for caching rendered files.

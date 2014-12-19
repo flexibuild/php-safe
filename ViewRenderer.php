@@ -27,7 +27,7 @@ class ViewRenderer extends BaseViewRenderer
      * @var string the directory or path alias pointing to where Php-Safe engine
      * compiled files will be stored.
      */
-    public $compiledPath = '@runtime/phpsafe/compiled';
+    public $compiledPath = '@runtime/flexibuild/phpsafe/compiled';
 
     /**
      * @var integer the permission to be set for newly created cache files.
