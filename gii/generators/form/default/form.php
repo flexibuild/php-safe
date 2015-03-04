@@ -21,7 +21,7 @@ use yii\widgets\ActiveForm;
 
     <?= "<?php " ?>$form = ActiveForm::begin(); ?>
 
-    <?php foreach ($generator->getModelAttributes() as $attribute): ?>
+    <?php foreach ($generator->modelAttributes as $attribute): ?>
     <?= "<?php print " ?>$form->field($model, '<?= $attribute ?>') ?>
     <?php endforeach; ?>
 

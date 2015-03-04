@@ -4,6 +4,7 @@
  */
 
 use yii\helpers\Inflector;
+use yii\helpers\StringHelper;
 
 /* @var $this yii\web\View */
 /* @var $generator flexibuild\phpsafe\gii\generators\controller\Generator */
@@ -14,10 +15,11 @@ echo "<?php\n";
 <?php if (!empty($generator->ns)): ?>
 namespace <?= $generator->ns ?>;
 <?php endif; ?>
+namespace <?= $generator->controllerNamespace ?>;
 
-class <?= $generator->controllerClass ?> extends <?= '\\' . trim($generator->baseClass, '\\') . "\n" ?>
+class <?= StringHelper::basename($generator->controllerClass) ?> extends <?= '\\' . trim($generator->baseClass, '\\') . "\n" ?>
 {
-<?php foreach ($generator->getActionIDs() as $action): ?>
+<?php foreach ($generator->actionIDs as $action): ?>
     public function action<?= Inflector::id2camel($action) ?>()
     {
         return $this->render('<?= $action ?>.<?= $generator->phpsafeExt ?>');

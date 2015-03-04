@@ -16,7 +16,7 @@ if ($modelClass === $searchModelClass) {
 }
 $rules = $generator->generateSearchRules();
 $labels = $generator->generateSearchLabels();
-$searchAttributes = $generator->getSearchAttributes();
+$searchAttributes = $generator->searchAttributes;
 $searchConditions = $generator->generateSearchConditions();
 
 echo "<?php\n";
@@ -69,7 +69,11 @@ class <?= $searchModelClass ?> extends <?= isset($modelAlias) ? $modelAlias : $m
             'query' => $query,
         ]);
 
-        if (!($this->load($params) && $this->validate())) {
+        $this->load($params);
+
+        if (!$this->validate()) {
+            // uncomment the following line if you do not want to any records when validation fails
+            // $query->where('0=1');
             return $dataProvider;
         }
 

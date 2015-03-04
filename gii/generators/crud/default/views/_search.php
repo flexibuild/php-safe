@@ -26,7 +26,7 @@ use yii\widgets\ActiveForm;
 
 <?php
 $count = 0;
-foreach ($generator->getColumnNames() as $attribute) {
+foreach ($generator->columnNames as $attribute) {
     if (++$count < 6) {
         echo "    <?php print " . $generator->generateActiveSearchField($attribute) . " ?>\n\n";
     } else {

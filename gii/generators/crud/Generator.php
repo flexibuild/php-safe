@@ -4,10 +4,8 @@ namespace flexibuild\phpsafe\gii\generators\crud;
 
 use flexibuild\phpsafe\gii\generators\GeneratorWithPhpsafeExtTrait;
 use yii\helpers\FileHelper;
-use yii\gii\CodeFile;
-use yii\gii\generators\crud\Generator as BaseGenerator;
 
-class Generator extends BaseGenerator
+class Generator extends \yii\gii\generators\crud\Generator
 {
     use GeneratorWithPhpsafeExtTrait;
 
@@ -17,7 +15,7 @@ class Generator extends BaseGenerator
      */
     protected function isPhpSafe($file)
     {
-        $viewPath = FileHelper::normalizePath($this->getViewPath());
+        $viewPath = FileHelper::normalizePath($this->viewPath);
         return FileHelper::normalizePath(dirname($file->path)) === $viewPath;
     }
 }

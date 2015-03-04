@@ -18,7 +18,7 @@ namespace <?= $ns ?>;
 
 class <?= $className ?> extends \yii\base\Module
 {
-    public $controllerNamespace = '<?= $generator->getControllerNamespace() ?>';
+    public $controllerNamespace = '<?= $generator->controllerNamespace ?>';
 
     public function init()
     {

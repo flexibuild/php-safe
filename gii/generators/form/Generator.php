@@ -2,12 +2,9 @@
 
 namespace flexibuild\phpsafe\gii\generators\form;
 
-use Yii;
 use flexibuild\phpsafe\gii\generators\GeneratorWithPhpsafeExtTrait;
-use yii\gii\CodeFile;
-use yii\gii\generators\form\Generator as BaseGenerator;
 
-class Generator extends BaseGenerator
+class Generator extends \yii\gii\generators\form\Generator
 {
     use GeneratorWithPhpsafeExtTrait;
 

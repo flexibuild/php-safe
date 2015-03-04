@@ -30,7 +30,7 @@ $this->params['breadcrumbs'][] = $this->title;
 <?php endif; ?>
 
     <p>
-        <?= "<?php print " ?>Html::a(<?= str_replace("\n", "\n        ", $generator->generateString('Create {modelClass}', ['modelClass' => Inflector::camel2words(StringHelper::basename($generator->modelClass))])) ?>, ['create'], ['class' => 'btn btn-success']) ?>
+        <?= "<?php print " ?>Html::a(<?= $generator->generateString('Create ' . Inflector::camel2words(StringHelper::basename($generator->modelClass))) ?>, ['create'], ['class' => 'btn btn-success']) ?>
     </p>
 
 <?php if ($generator->indexWidgetType === 'grid'): ?>
@@ -41,8 +41,8 @@ $this->params['breadcrumbs'][] = $this->title;
 
 <?php
 $count = 0;
-if (($tableSchema = $generator->getTableSchema()) === false) {
-    foreach ($generator->getColumnNames() as $name) {
+if (($tableSchema = $generator->tableSchema) === false) {
+    foreach ($generator->columnNames as $name) {
         if (++$count < 6) {
             echo "            '" . $name . "',\n";
         } else {

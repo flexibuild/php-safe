@@ -3,10 +3,8 @@
 namespace flexibuild\phpsafe\gii\generators\module;
 
 use flexibuild\phpsafe\gii\generators\GeneratorWithPhpsafeExtTrait;
-use yii\gii\CodeFile;
-use yii\gii\generators\module\Generator as BaseGenerator;
 
-class Generator extends BaseGenerator
+class Generator extends \yii\gii\generators\module\Generator
 {
     use GeneratorWithPhpsafeExtTrait;
 

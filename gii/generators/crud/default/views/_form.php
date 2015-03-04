@@ -28,7 +28,7 @@ use yii\widgets\ActiveForm;
 
     <?= "<?php " ?>$form = ActiveForm::begin(); ?>
 
-<?php foreach ($generator->getColumnNames() as $attribute) {
+<?php foreach ($generator->columnNames as $attribute) {
     if (in_array($attribute, $safeAttributes)) {
         echo "    <?php print " . $generator->generateActiveField($attribute) . " ?>\n\n";
     }

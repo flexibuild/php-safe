@@ -40,12 +40,12 @@ $this->params['breadcrumbs'][] = $this->title;
         'model' => $model,
         'attributes' => [
 <?php
-if (($tableSchema = $generator->getTableSchema()) === false) {
-    foreach ($generator->getColumnNames() as $name) {
+if (($tableSchema = $generator->tableSchema) === false) {
+    foreach ($generator->columnNames as $name) {
         echo "            '" . $name . "',\n";
     }
 } else {
-    foreach ($generator->getTableSchema()->columns as $column) {
+    foreach ($generator->tableSchema->columns as $column) {
         $format = $generator->generateColumnFormat($column);
         echo "            '" . $column->name . ($format === 'text' ? "" : ":" . $format) . "',\n";
     }
