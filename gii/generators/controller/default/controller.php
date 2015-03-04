@@ -15,7 +15,7 @@ echo "<?php\n";
 namespace <?= $generator->ns ?>;
 <?php endif; ?>
 
-class <?= $generator->getControllerClass() ?> extends <?= '\\' . trim($generator->baseClass, '\\') . "\n" ?>
+class <?= $generator->controllerClass ?> extends <?= '\\' . trim($generator->baseClass, '\\') . "\n" ?>
 {
 <?php foreach ($generator->getActionIDs() as $action): ?>
     public function action<?= Inflector::id2camel($action) ?>()
