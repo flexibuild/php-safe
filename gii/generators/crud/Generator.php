@@ -15,7 +15,7 @@ class Generator extends \yii\gii\generators\crud\Generator
      */
     protected function isPhpSafe($file)
     {
-        $viewPath = FileHelper::normalizePath($this->viewPath);
+        $viewPath = FileHelper::normalizePath($this->getViewPath());
         return FileHelper::normalizePath(dirname($file->path)) === $viewPath;
     }
 }
