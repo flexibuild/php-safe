@@ -243,8 +243,17 @@ class Compiler extends Component
     protected function skipBraces($tokens, $offset = 0, $openBrace = '{', $closeBrace = '}')
     {
         $counter = 0;
-        while (false !== $offset = $this->skipUntilLexems($tokens, [$openBrace, $closeBrace], $offset)) {
-            if ($this->tokenHasSameLexem($tokens[$offset], $openBrace)) {
+
+        $openLexems = [$openBrace];
+        if ($openBrace === '{') {
+            $openLexems[] = T_CURLY_OPEN;
+            $openLexems[] = T_DOLLAR_OPEN_CURLY_BRACES;
+            $openLexems[] = T_STRING_VARNAME;
+        }
+        $skipUntilLexems = array_merge($openLexems, [$closeBrace]);
+
+        while (false !== $offset = $this->skipUntilLexems($tokens, $skipUntilLexems, $offset)) {
+            if ($this->tokenInLexems($tokens[$offset], $openLexems)) {
                 ++$counter;
                 ++$offset;
             } elseif ($this->tokenHasSameLexem($tokens[$offset], $closeBrace)) {
