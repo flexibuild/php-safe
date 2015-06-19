@@ -139,4 +139,5 @@ Note:
 
 * Extension has default config for yii simple base application. For yii-advanced application
 you must configure directories so console will may "see" it.
-
+* For better debugging we suggest you to use \flexibuild\phpsafe\web\ErrorHandler in your
+web application, or to add 'use \flexibuild\phpsafe\web\ErrorHandlerTrait;' in own error handler.
