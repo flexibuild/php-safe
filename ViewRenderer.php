@@ -3,9 +3,6 @@
 namespace flexibuild\phpsafe;
 
 use Yii;
-use flexibuild\phpsafe\helpers\FileHelper;
-
-use yii\base\ViewRenderer as BaseViewRenderer;
 use yii\base\InvalidConfigException;
 use yii\base\InvalidParamException;
 use yii\base\Exception;
@@ -14,14 +11,18 @@ use yii\caching\Cache;
 use yii\caching\Dependency;
 use yii\caching\FileCache;
 use yii\caching\FileDependency as YiiFileDependency;
+
+use yii\helpers\VarDumper;
+
 use flexibuild\phpsafe\caching\FileDependency;
+use flexibuild\phpsafe\helpers\FileHelper;
 
 /**
  * ViewRenderer component for yii2 application.
  * 
  * @author SeynovAM <sejnovalexey@gmail.com>
  */
-class ViewRenderer extends BaseViewRenderer
+class ViewRenderer extends \yii\base\ViewRenderer
 {
     /**
      * @var string the directory or path alias pointing to where Php-Safe engine
@@ -152,10 +153,23 @@ class ViewRenderer extends BaseViewRenderer
             $mode = '0' . base_convert($this->mkDirMode, 10, 8);
             throw new Exception("Cannot create directory '$dir' with $mode mode.");
         }
+
         file_put_contents($compiledFile, $content);
         if ($this->fileMode !== null && !@chmod($compiledFile, $this->fileMode)) {
             $mode = '0' . base_convert($this->fileMode, 10, 8);
             Yii::warning("Cannot change mode to $mode for file: $compiledFile.", __METHOD__);
+        }
+
+        if ($compiler->collectMap && $compiler->getLinesMap()) {
+            $mapFile = $this->getMapFilePath($hash);
+            file_put_contents($mapFile, '<?php return ' . VarDumper::export([
+                'source' => $realFilePath,
+                'map' => $compiler->getLinesMap(),
+            ]) . ';');
+            if ($this->fileMode !== null && !@chmod($mapFile, $this->fileMode)) {
+                $mode = '0' . base_convert($this->fileMode, 10, 8);
+                Yii::warning("Cannot change mode to $mode for file: $mapFile.", __METHOD__);
+            }
         }
 
         $this->saveHashToCache($file, $hash);
@@ -223,5 +237,14 @@ class ViewRenderer extends BaseViewRenderer
     public function getCompiledFilePath($hash)
     {
         return rtrim(Yii::getAlias($this->compiledPath), '\/').'/'.substr($hash, 0, 2).'/'.substr($hash, 2).'.php';
+    }
+
+    /**
+     * @param string $hash generated hash for file.
+     * @return string the full path to map file.
+     */
+    public function getMapFilePath($hash)
+    {
+        return rtrim(Yii::getAlias($this->compiledPath), '\/').'/'.substr($hash, 0, 2).'/'.substr($hash, 2).'.map';
     }
 }

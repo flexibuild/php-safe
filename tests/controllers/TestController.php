@@ -12,8 +12,11 @@ class TestController extends Controller
         $file = realpath(__DIR__."/../$filename");
         $compiler = new Compiler(file_get_contents($file), [
             'compilingFilePath' => $file,
+            'collectMap' => true,
+//            'clearComments' => true,
         ]);
         file_put_contents(__DIR__.'/../compiled.php', $compiler->getCompiledCode());
+        file_put_contents(__DIR__.'/../lines-map.txt', print_r($compiler->getLinesMap(), true));
     }
 
     public function actionRender($filename = 'compiled.php')

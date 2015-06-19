@@ -5,8 +5,8 @@ namespace flexibuild\phpsafe;
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidParamException;
+use yii\base\InvalidValueException;
 use yii\helpers\VarDumper;
-use \LogicException;
 
 /**
  * Compiler of php-safe template engine.
@@ -23,6 +23,9 @@ use \LogicException;
  * 
  * @property string $initHtmlCode compiler adds that code at the beginning of compiled code.
  * It returns code with creating html code by default.
+ * 
+ * @property-read array|null $linesMap map between source and compiled files.
+ * Null will be returned if map was not collected.
  */
 class Compiler extends Component
 {
@@ -63,6 +66,12 @@ class Compiler extends Component
     public $compilingFilePath = 'Unknown';
 
     /**
+     * @var boolean whether need to create map between source and compiled files.
+     * YII_DEBUG by default.
+     */
+    public $collectMap /* = defined('YII_DEBUG') ? YII_DEBUG : false */;
+
+    /**
      * @var string php code for parsing.
      */
     private $_code;
@@ -76,6 +85,21 @@ class Compiler extends Component
      * @var array parsed tokens.
      */
     private $_tokens;
+
+    /**
+     * @var array|null|boolean lines map between source and compiled files.
+     */
+    private $_linesMap = false;
+
+    /**
+     * @var integer keeps last line number in result code (for collecting lines map).
+     */
+    private $_lastResultLine;
+
+    /**
+     * @var integer keeps last line number in source code (for collecting lines map).
+     */
+    private $_lastSourceLine;
 
     /**
      * Creates and returns new instance of Compiler.
@@ -97,6 +121,7 @@ class Compiler extends Component
     {
         $this->_code = $code;
         $this->clearComments = defined('YII_DEBUG') ? !YII_DEBUG : false;
+        $this->collectMap = defined('YII_DEBUG') ? YII_DEBUG : false;
         parent::__construct($config);
     }
 
@@ -134,10 +159,32 @@ class Compiler extends Component
         }
 
         Yii::beginProfile($token = 'Process tokens with phpsafe compiler.', __METHOD__);
-        $this->_compiledCode = $this->processTokens();
+
+        $this->_linesMap = $this->collectMap ? [[0, 0]] : null;
+        $this->_lastResultLine = $this->_lastSourceLine = $this->collectMap ? 1 : null;
+        $this->_compiledCode = '';
+
+        $this->processTokens();
+
         Yii::endProfile($token, __METHOD__);
 
         return $this->_compiledCode;
+    }
+
+    /**
+     * @return array|null map between source and compiled files.
+     * Null will be returned if map was not collected.
+     */
+    public function getLinesMap()
+    {
+        if ($this->_linesMap !== false) {
+            return $this->_linesMap;
+        } elseif (!$this->collectMap) {
+            return null;
+        } else {
+            $this->getCompiledCode();
+            return $this->_linesMap;
+        }
     }
 
     /**
@@ -271,39 +318,38 @@ class Compiler extends Component
 
     /**
      * Parses tokens.
-     * @return string compiled code.
      */
     protected function processTokens()
     {
-        $result = '';
         $tokens = $this->getTokens();
 
         $offset = 0;
         while ((false !== $oldOffset = $offset) && (false !== $offset = $this->skipUntilLexems($tokens, $this->openTagsLexems, $offset))) {
-            $result .= $this->processTokenToString($tokens, $oldOffset, $offset - 1);
+            $this->processTokenToString($tokens, $oldOffset, $offset - 1);
 
             $offset = $this->skipUntilLexems($tokens, T_CLOSE_TAG, $oldOffset = $offset);
             if ($offset === false) {
-                $result .= $this->processPhpCodeWithOpenTag(array_slice($tokens, $oldOffset + 1), $tokens[$oldOffset]);
+                $this->processPhpCodeWithOpenTag(array_slice($tokens, $oldOffset + 1), $tokens[$oldOffset]);
             } else {
-                $result .= $this->processPhpCodeWithOpenTag(array_slice($tokens, $oldOffset + 1, $offset - 1 - $oldOffset), $tokens[$oldOffset]);
-                $result .= ' '.str_replace('%', '?', $tokens[$offset][1]);
+                $this->processPhpCodeWithOpenTag(array_slice($tokens, $oldOffset + 1, $offset - 1 - $oldOffset), $tokens[$oldOffset]);
+
+                $closeTag = ' ' . str_replace('%', '?', $tokens[$offset][1]);
+                $this->_compiledCode .= $closeTag;
+                $this->processLinesMap($closeTag, $tokens[$offset]);
+
                 ++$offset;
             }
         }
 
         if ($oldOffset !== false) {
-            $result .= $this->processTokenToString($tokens, $oldOffset);
+            $this->processTokenToString($tokens, $oldOffset);
         }
-
-        return $result;
     }
 
     /**
      * Parses php code (non-html coode) with open tag.
      * @param array $phpCodeTokens
      * @param array $openTagToken
-     * @return string compiled php code.
      * @throws \yii\base\InvalidParamException
      */
     protected function processPhpCodeWithOpenTag($phpCodeTokens, $openTagToken)
@@ -318,26 +364,27 @@ class Compiler extends Component
         }
 
         if ($openTag === T_OPEN_TAG_WITH_ECHO) {
-            return $this->processPhpCodeWithOpenTag(array_merge([
+            $this->processPhpCodeWithOpenTag(array_merge([
                 [T_ECHO, 'echo', $line],
             ], $phpCodeTokens), [T_OPEN_TAG, '<?php ', $line]);
+            return;
         }
 
-        $result = '<?php'.ltrim($tagAsStr, '<%?ph');
-        $result .= $this->processPhpCode($phpCodeTokens);
-        return $result;
+        $standardOpenTag = '<?php'.ltrim($tagAsStr, '<%?ph');
+        $this->processLinesMap($standardOpenTag, $openTagToken);
+        $this->_compiledCode .= $standardOpenTag;
+
+        $this->processPhpCode($phpCodeTokens);
     }
 
     /**
      * Compile php (non-html) code.
      * @param array $phpCodeTokens
-     * @return string compiled php code.
-     * @throws \Exception
+     * @throws InvalidValueException
      */
     protected function processPhpCode($phpCodeTokens)
     {
         $offset = 0;
-        $result = '';
         $entitiesWithBodyLexems = array_merge([
             T_CLASS,
             T_FUNCTION,
@@ -349,27 +396,25 @@ class Compiler extends Component
         ] : [], $entitiesWithBodyLexems);
 
         while ((false !== $oldOffset = $offset) && (false !== $offset = $this->skipUntilLexems($phpCodeTokens, $skipUntilLexems, $offset))) {
-            $result .= $this->processTokenToString($phpCodeTokens, $oldOffset, $offset - 1);
+            $this->processTokenToString($phpCodeTokens, $oldOffset, $offset - 1);
 
             if ($this->tokenInLexems($phpCodeTokens[$offset], $this->echoLexems)) {
-                $result .= $this->processEchoExpression($phpCodeTokens, $offset);
+                $this->processEchoExpression($phpCodeTokens, $offset);
 
             } elseif ($this->processEval && $this->tokenHasSameLexem($phpCodeTokens[$offset], T_EVAL)) {
-                $result .= $this->processEvals($phpCodeTokens, $offset);
+                $this->processEvals($phpCodeTokens, $offset);
 
             } elseif ($this->tokenInLexems($phpCodeTokens[$offset], $entitiesWithBodyLexems)) {
-                $result .= $this->processEntityWithBody($phpCodeTokens, $offset);
+                $this->processEntityWithBody($phpCodeTokens, $offset);
 
             } else {
-                throw new \Exception('Unknown internal skip lexems error.');
+                throw new InvalidValueException('Unknown internal skip lexems error.');
             }
         }
 
         if ($oldOffset !== false) {
-            $result .= $this->processTokenToString($phpCodeTokens, $oldOffset);
+            $this->processTokenToString($phpCodeTokens, $oldOffset);
         }
-
-        return $result;
     }
 
     /**
@@ -377,9 +422,8 @@ class Compiler extends Component
      * @param array $tokens First token is echo or print.
      * @param integer $offset 0 by default.
      * After process set `$offset` on the first lexem after echo expression.
-     * @return string
      * @throws InvalidParamException
-     * @throws \Exception
+     * @throws InvalidValueException
      */
     protected function processEchoExpression($tokens, &$offset = 0)
     {
@@ -395,13 +439,15 @@ class Compiler extends Component
         ] : []);
 
         $echoToken = $tokens[$offset];
-        $result = $this->getBeforeEchoPhpCode($echoToken);
+        $beforeEchoCode = $this->getBeforeEchoPhpCode($echoToken);
+        $this->processLinesMap($beforeEchoCode, $echoToken);
+        $this->_compiledCode .= $beforeEchoCode;
 
         $isBreaked = false;
         ++$offset;
 
         while ((false !== $oldOffset = $offset) && (false !== $offset = $this->skipUntilLexems($tokens, $skipUntilLexemsForEcho, $offset))) {
-            $result .= $this->processTokenToString($tokens, $oldOffset, $offset - 1);
+            $this->processTokenToString($tokens, $oldOffset, $offset - 1);
 
             if ($this->tokenHasSameLexem($tokens[$offset], ';')) {
                 $isBreaked = true;
@@ -409,26 +455,27 @@ class Compiler extends Component
                 break;
 
             } elseif ($this->processEval && $this->tokenHasSameLexem($tokens[$offset], T_EVAL)) {
-                $result .= $this->processEvals($tokens, $offset);
+                $this->processEvals($tokens, $offset);
                 continue;
 
             } elseif ($this->tokenHasSameLexem($tokens[$offset], T_FUNCTION)) {
-                $result .= $this->processEntityWithBody($tokens, $offset);
+                $this->processEntityWithBody($tokens, $offset);
 
             } else {
-                throw new \Exception('Unknown internal skip lexems error.');
+                throw new InvalidValueException('Unknown internal skip lexems error.');
             }
         }
 
         if ($oldOffset !== false) {
-            $result .= $this->processTokenToString($tokens, $oldOffset, $offset === false ? null : $offset - 1);
-        }
-        $result .= $this->getAfterEchoPhpCode($echoToken);
-        if ($isBreaked) {
-            $result .= '; ';
+            $this->processTokenToString($tokens, $oldOffset, $offset === false ? null : $offset - 1);
         }
 
-        return $result;
+        $afterEchoCode = $this->getAfterEchoPhpCode($echoToken);
+        if ($isBreaked) {
+            $afterEchoCode .= '; ';
+        }
+        $this->processLinesMap($afterEchoCode);
+        $this->_compiledCode .= $afterEchoCode;
     }
 
     /**
@@ -436,7 +483,6 @@ class Compiler extends Component
      * @param array $tokens First token is on of: function|class|interface|trait.
      * @param integer $offset 0 by default.
      * After process set `$offset` on the first lexem after body expression.
-     * @return string
      * @throws InvalidParamException
      */
     protected function processEntityWithBody($tokens, &$offset = 0)
@@ -447,12 +493,11 @@ class Compiler extends Component
 
         $oldOffset = $offset;
         if (false === $offset = $this->skipBraces($tokens, $offset)) {
-            $result = $this->processTokenToString($tokens, $oldOffset, null);
+            $this->processTokenToString($tokens, $oldOffset, null);
         } else {
-            $result = $this->processTokenToString($tokens, $oldOffset, $offset);
+            $this->processTokenToString($tokens, $oldOffset, $offset);
             ++$offset;
         }
-        return $result;
     }
 
     /**
@@ -460,9 +505,8 @@ class Compiler extends Component
      * @param array $phpCodeTokens first token is eval.
      * @param integer $offset 0 by default.
      * After process set `$offset` on the first lexem after eval expression.
-     * @return string php code tokens with processed evals.
      * @throws InvalidParamException
-     * @throws LogicException on parse error.
+     * @throws \LogicException on parse error.
      */
     protected function processEvals($phpCodeTokens, &$offset = 0)
     {
@@ -470,33 +514,39 @@ class Compiler extends Component
             throw new InvalidParamException('Incorrect param $phpCodeTokens in '.__METHOD__.'.');
         }
 
+        $beginEvalCode = "eval(ltrim(\\" . ltrim(get_class($this), '\\');
+        $beginEvalCode .= "::createFromCode('<?php ' . ";
+        $this->processLinesMap($beginEvalCode, $phpCodeTokens[$offset]);
+        $this->_compiledCode .= $beginEvalCode;
+
         if (false === $offset = $this->skipBraces($phpCodeTokens, ($oldOffset = $offset) + 1, '(', ')')) {
-            throw new LogicException('Cannot find open bracket \'(\' after eval keyword on the line:'.$phpCodeTokens[$oldOffset][2].'.');
+            throw new \LogicException("Cannot find open bracket '(' after eval keyword in $this->compilingFilePath on the line: {$phpCodeTokens[$oldOffset][2]}.");
         }
 
         $lineOffset = $offset + 2;
         while (--$lineOffset > 0 && !is_array($phpCodeTokens[$lineOffset])); // search last token with line number
         $line = $lineOffset > 0 ? $phpCodeTokens[$lineOffset][2] : 0;
 
-        $result = "eval(ltrim(\\".ltrim(get_class($this), '\\');
-        $result .= "::createFromCode('<?php '.";
-        $result .= $this->processTokenToString($phpCodeTokens, $oldOffset + 1, $offset);
-        $result .= ', '.VarDumper::export([
-            'processEval'       =>  true,
-            'openTagsLexems'    =>  $this->openTagsLexems,
-            'echoLexems'        =>  $this->echoLexems,
-            'unsafeEchoLexems'  =>  $this->unsafeEchoLexems,
-            'clearComments'     =>  $this->clearComments,
-            'compilingFilePath' =>  "$this->compilingFilePath($line) : eval()'d code",
+        $this->processTokenToString($phpCodeTokens, $oldOffset + 1, $offset);
+
+        $endEvalCode = ', ' . VarDumper::export([
+            'processEval' => true,
+            'openTagsLexems' => $this->openTagsLexems,
+            'echoLexems' => $this->echoLexems,
+            'unsafeEchoLexems' => $this->unsafeEchoLexems,
+            'clearComments' => $this->clearComments,
+            'collectMap' => $this->collectMap,
+            'compilingFilePath' => "$this->compilingFilePath($line) : eval()'d code",
         ]);
-        $result .= ')'; // close createFromCode()
-        $result .= '->getCompiledCode()';
-        $result .= ", '<?ph')"; // close ltrim()
-        $result .= ')'; // close eval()
+        $endEvalCode .= ')'; // close createFromCode()
+        $endEvalCode .= '->getCompiledCode()';
+        $endEvalCode .= ", '<?ph')"; // close ltrim()
+        $endEvalCode .= ')'; // close eval()
+
+        $this->_compiledCode .= $endEvalCode;
+        $this->processLinesMap($endEvalCode);
 
         ++$offset;
-
-        return $result;
     }
 
     /**
@@ -504,7 +554,6 @@ class Compiler extends Component
      * @param array $tokens
      * @param integer $from from first item by default.
      * @param integer $to by default count($tokens).
-     * @return string
      */
     protected function processTokenToString($tokens, $from = 0, $to = null)
     {
@@ -513,11 +562,12 @@ class Compiler extends Component
         } else {
             $to = min($to, count($tokens) - 1);
         }
-        $result = '';
+
         for ($i = max($from, 0); $i <= $to; ++$i) {
-            $result .= $this->tokenToString($tokens[$i]);
+            $str = $this->tokenToString($tokens[$i]);
+            $this->processLinesMap($str, $tokens[$i]);
+            $this->_compiledCode .= $str;
         }
-        return $result;
     }
 
     /**
@@ -563,5 +613,36 @@ class Compiler extends Component
                 return true;
         }
         return false;
+    }
+
+    /**
+     * @param string $resultCode
+     * @param mixed $token
+     */
+    protected function processLinesMap($resultCode, $token = null)
+    {
+        if (!$this->collectMap) {
+            return;
+        }
+
+        $resultLine = $this->_lastResultLine;
+        $this->_lastResultLine += substr_count($resultCode, "\n");
+
+        if (is_string($token)) {
+            $sourceLine = $this->_lastSourceLine;
+            $this->_lastSourceLine += substr_count($token, "\n");
+        } elseif (is_array($token)) {
+            $this->_lastSourceLine = $sourceLine = $token[2];
+        } else {
+            $sourceLine = $this->_lastSourceLine;
+        }
+
+        $addLines = [$resultLine, $sourceLine];
+        $count = count($this->_linesMap);
+        if ($count > 0 && $this->_linesMap[$count - 1] === $addLines) {
+            return;
+        }
+
+        $this->_linesMap[] = $addLines;
     }
 }
